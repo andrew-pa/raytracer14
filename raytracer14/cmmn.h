@@ -133,4 +133,9 @@ namespace raytracer14
 			return pair<float, float>(tmin, tmax);
 		}
 	};
+
+	inline float max_comp(vec3 v)
+	{
+		return glm::max(v.x, glm::max(v.y, v.z));
+	}
 }
