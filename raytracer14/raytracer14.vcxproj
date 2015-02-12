@@ -78,11 +78,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="renderer.cpp" />
     <ClCompile Include="texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
     <ClInclude Include="cmmn.h" />
+    <ClInclude Include="renderer.h" />
     <ClInclude Include="surface.h" />
     <ClInclude Include="texture.h" />
   </ItemGroup>

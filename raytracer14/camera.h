@@ -22,7 +22,7 @@ namespace raytracer14
 			up = normalize(cross(look, right));
 		}
 
-		inline const ray& make_ray(vec2 uv)
+		inline const ray& make_ray(vec2 uv) const
 		{
 			return ray(position,
 				normalize(w*look + uv.x*right + uv.y*up));

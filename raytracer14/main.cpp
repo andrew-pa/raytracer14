@@ -2,6 +2,7 @@
 #include "texture.h"
 #include "camera.h"
 #include "surface.h"
+#include "renderer.h"
 using namespace raytracer14;
 
 int main() 
@@ -9,10 +10,12 @@ int main()
 	texture2d tx{ ivec2(640*2, 480*2) };
 
 	camera cam{ vec3(0, 0, -5), vec3(0.f) };
-	surface* surf = new box(vec3(-.5f), vec3(.5f));//new sphere(vec3(0.f), 1.f);
+	surface* surf = new sphere(vec3(0.f), 1.f);
+
+	renderer* rndr = new std_multi_thread_renderer;
 
 	auto start = chrono::system_clock::now();
-	for (int y = 0; y < tx.size.y; ++y) 
+	/*for (int y = 0; y < tx.size.y; ++y) 
 	{
 		for (int x = 0; x < tx.size.x; ++x)
 		{
@@ -25,7 +28,8 @@ int main()
 			}
 			else tx.pixel(ivec2(x, y)) = vec3(0.f);
 		}
-	}
+	}*/
+	rndr->render(&tx, scene(cam, surf));
 	auto end = chrono::system_clock::now();
 
 	auto render_time = chrono::duration_cast<chrono::milliseconds>(end - start);

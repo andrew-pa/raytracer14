@@ -1,3 +1,4 @@
+#pragma once
 #include "cmmn.h"
 
 namespace raytracer14

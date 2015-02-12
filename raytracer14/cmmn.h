@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <numeric>
 #include <chrono>
+#include <thread>
 using namespace std;
 
 #include <glm/glm.hpp>
