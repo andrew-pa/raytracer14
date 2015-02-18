@@ -2,34 +2,45 @@
 #include "texture.h"
 #include "camera.h"
 #include "surface.h"
-#include "renderer.h"
 using namespace raytracer14;
+
+
+/*class diffuse_material : public material
+{
+	lambert_bxdf* b;
+public:
+	vec3 col;
+	diffuse_material(vec3 c) : col(c) { b = new lambert_bxdf(c); }
+	bxdf* bsdf(const hit_record& hr) const override
+	{
+		b->R = col;
+		return b;
+	}
+};*/
 
 int main() 
 {
 	texture2d tx{ ivec2(640*2, 480*2) };
 
-	camera cam{ vec3(0, 0, -5), vec3(0.f) };
-	surface* surf = new sphere(vec3(0.f), 1.f);
+	camera cam{ vec3(0, 2, -5), vec3(0.f) };
 
-	renderer* rndr = new std_multi_thread_renderer;
+	sphere sp = sphere(mat4(1), 1.f, 1.f, 1.f, 360.f);
 
 	auto start = chrono::system_clock::now();
-	/*for (int y = 0; y < tx.size.y; ++y) 
+	for (int y = 0; y < tx.size.y; ++y) 
 	{
 		for (int x = 0; x < tx.size.x; ++x)
 		{
 			vec2 uv = ((vec2(x, y) / (vec2)tx.size) * vec2(2.f)) - vec2(1.f);
 			auto r = cam.make_ray(uv);
-			hit_record hr;
-			if(surf->hit(r, hr))
+			hit_record hr(10000);
+			if(sp.hit(r, hr))
 			{
-				tx.pixel(ivec2(x, y)) = vec3(1.f, .5f, 0.f)* glm::max(dot(hr.norm, vec3(0,-1,-.5f)), 0.2f);
+				tx.pixel(ivec2(x, y)) = hr.nn;
 			}
 			else tx.pixel(ivec2(x, y)) = vec3(0.f);
 		}
-	}*/
-	rndr->render(&tx, scene(cam, surf));
+	}
 	auto end = chrono::system_clock::now();
 
 	auto render_time = chrono::duration_cast<chrono::milliseconds>(end - start);

@@ -2,14 +2,14 @@
 #include <queue>
 #include <mutex>
 
-namespace raytracer14
+/*namespace raytracer14
 {
 	vec3 renderer::ray_color(const scene& scene, const ray& r) const
 	{
 		hit_record hr;
 		if(scene.surf->hit(r, hr))
 		{
-			return vec3(1.f, 0.5f, 0.f)*dot(hr.norm, vec3(0, -1.f, 0));
+			return surfitrg->Li(this, r, scene, hr);
 		}
 		return vec3(0.f);
 	}
@@ -67,4 +67,4 @@ namespace raytracer14
 		}
 	}
 	
-}
+}*/

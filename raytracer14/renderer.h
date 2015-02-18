@@ -1,30 +1,27 @@
 #pragma once
 #include "cmmn.h"
 #include "texture.h"
-#include "surface.h"
-#include "camera.h"
+#include "integrator.h"
+#include "scene.h"
 
 namespace raytracer14
 {
-	struct scene
-	{
-		camera cam;
-		surface* surf;
-		scene(): cam(vec3(0.f), vec3(0.f)) {}
-		scene(const camera& c, surface* sf): cam(c), surf(sf) {}
-	};
 
 	class renderer
 	{
 	protected:
-		vec3 ray_color(const scene& scene, const ray& r) const; //provide std rendering but different acclerators
+		integrator* surfitrg;
 	public:
+		vec3 ray_color(const scene& scene, const ray& r) const; //provide std rendering but different acclerator
+		renderer(integrator* surfitg) : surfitrg(surfitg) {}
 		virtual void render(texture2d* rtx, const scene& scene) const = 0;
 	};
 
 	class simple_renderer : public renderer
 	{
 	public:
+		simple_renderer(integrator* surfitg) : renderer(surfitg) {}
+
 		void render(texture2d* rtx, const scene& scene) const override
 		{
 			ivec2 p(0, 0);
@@ -46,8 +43,8 @@ namespace raytracer14
 	{
 	public:
 		ivec2 tile_size;
-		std_multi_thread_renderer(ivec2 ts = ivec2(32))
-			: tile_size(ts) {}
+		std_multi_thread_renderer(integrator* i, ivec2 ts = ivec2(32))
+			: tile_size(ts), renderer(i) {}
 		void render(texture2d* rtx, const scene& scene) const override;
 	};
 }

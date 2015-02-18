@@ -22,6 +22,25 @@ using namespace glm;
 
 namespace raytracer14
 {
+	struct interval
+	{
+		float min, max;
+		interval(float a, float b)
+			: min(glm::min(a,b)), max(glm::max(a,b)) {}
+		interval()
+			: min(numeric_limits<float>::max()), max(numeric_limits<float>::min()){}
+		interval(float m, float x, bool force) 
+			: min(m), max(x) {}
+
+		inline float length() const { return max - min; }
+
+		inline bool outside(const interval& o) const
+		{
+			//		  O2 T        T O1
+			// --------]-[--------]-[--------
+			return min > o.max || max < o.min;
+		}
+	};
 	struct ray
 	{
 		vec3 o, d;
@@ -30,6 +49,24 @@ namespace raytracer14
 		inline vec3 operator() (float t) const
 		{
 			return o + d*t;
+		}
+		inline const ray& operator* (const mat4& t) const
+		{
+			return ray(vec3(t*vec4(o,1.f)), vec3(t*vec4(d, 0.f)));
+		}
+	};
+
+	struct ray_diff : public ray
+	{
+		vec3 dxo, dyo;
+		vec3 dxd, dyd;
+		ray_diff(const ray& r) : ray(r) {}
+		void scale(float s)
+		{
+			dxo = o + (dxo - o)*s;
+			dyo = o + (dyo - o)*s;
+			dxd = d + (dxd - d)*s;
+			dyd = d + (dyd - d)*s; 
 		}
 	};
 
@@ -41,8 +78,12 @@ namespace raytracer14
 			: min(m), max(x) {}
 		
 		aabb(const aabb& a, const aabb& b)
-			: min(), max() 
+			: min(numeric_limits<float>::max()), max(numeric_limits<float>::min()) 
 		{
+			add_point(a.min);
+			add_point(a.max);
+			add_point(b.min);
+			add_point(b.max);
 		}
 
 		inline void add_point(vec3 p)
@@ -133,10 +174,35 @@ namespace raytracer14
 
 			return pair<float, float>(tmin, tmax);
 		}
+
+		inline vec3 center() const
+		{
+			return (min + max) * .5f;
+		}
 	};
 
 	inline float max_comp(vec3 v)
 	{
 		return glm::max(v.x, glm::max(v.y, v.z));
+	}
+
+	
+
+	inline bool quadradic(float A, float B, float C, pair<float,float>& x)
+	{
+		float d = B*B - 4.f*A*C;
+		if (d <= 0.f) return false;
+		d = sqrtf(d);
+		float q;
+		if (B < 0) q = -.5f * (B - d);
+		else       q = -.5f * (B + d);
+		x = make_pair(q / A, C / q);
+		return true;
+	}
+
+	inline vec3 cosine_sample_hemisphere()
+	{
+		vec2 dsk = diskRand(1.f);
+		return vec3(dsk, sqrt(glm::max(0.f, 1.f - dsk.x*dsk.x - dsk.y*dsk.y)));
 	}
 }

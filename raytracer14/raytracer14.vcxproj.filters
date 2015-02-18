@@ -22,7 +22,13 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="renderer.cpp">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bvh_tree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="integrator.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -39,6 +45,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bvh_tree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="integrator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bxdf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lights.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
