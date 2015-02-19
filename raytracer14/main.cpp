@@ -18,13 +18,21 @@ public:
 	}
 };*/
 
+#ifdef _DEBUG
+#define COMPM "DEBUG"
+#elif NDEBUG
+#define COMPM "RELEASE"
+#else
+#define COMPM "UNKNOWN"
+#endif
+
 int main() 
 {
 	texture2d tx{ ivec2(640*2, 480*2) };
 
 	camera cam{ vec3(0, 2, -5), vec3(0.f) };
 
-	sphere sp = sphere(mat4(1), 1.f, 1.f, 1.f, 360.f);
+	sphere sp = sphere(mat4(1), 1.f, 1.f, -1.f, 360.f);
 
 	auto start = chrono::system_clock::now();
 	for (int y = 0; y < tx.size.y; ++y) 
@@ -36,7 +44,7 @@ int main()
 			hit_record hr(10000);
 			if(sp.hit(r, hr))
 			{
-				tx.pixel(ivec2(x, y)) = hr.nn;
+				tx.pixel(ivec2(x, y)) = glm::max(0.1f, dot(hr.nn, vec3(0.f, -.5f, -.5f))) * vec3(1.f, 0.5f, 0.f);
 			}
 			else tx.pixel(ivec2(x, y)) = vec3(0.f);
 		}
@@ -46,7 +54,7 @@ int main()
 	auto render_time = chrono::duration_cast<chrono::milliseconds>(end - start);
 
 	ostringstream outtx;
-	outtx << "RENDER TIME: " << render_time.count() << "MS";
+	outtx << "RENDER TIME: " << render_time.count() << "MS [" << COMPM << "]";
 	tx.draw_text(ivec2(8), outtx.str(), vec3(1.f));
 
 	ostringstream fnstr;

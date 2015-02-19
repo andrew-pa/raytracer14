@@ -22,8 +22,10 @@ namespace raytracer14
 		}
 
 		hit_record(const interval& tt, const vec4& pp, const vec4& xdpdu, const vec4& xdpdv, const vec4& xdndu, const vec4& xdndv, vec2 uuvv, const surface* s)
-			: t(tt), p(pp), dpdu(xdpdu), dpdv(xdpdv), dndu(xdndu), dndv(xdndv), nn(normalize(cross(dpdu,dpdv))), uv(uuvv), surf(s) 
+			: t(tt), p(pp), dpdu(xdpdu), dpdv(xdpdv), dndu(xdndu), dndv(xdndv),
+			nn(0.), uv(uuvv), surf(s) 
 		{
+			nn = normalize(cross(dpdu, dpdv));
 		}
 	};
 
@@ -71,7 +73,7 @@ namespace raytracer14
 			pair<float,float> t;
 			if (!quadradic(A, B, C, t))
 				return false;
-			if ((interval(t.first,t.second)).outside(hr.t)) return false;
+			if (t.first > hr.t.max || t.second < hr.t.min) return false;
 			float thit = t.first;
 			if(t.first < hr.t.min)
 			{
@@ -83,7 +85,7 @@ namespace raytracer14
 			if (phit.x == 0.f && phit.y == 0.f) phit.x = 1e-5f * radius;
 			float phi = atan2f(phit.x, phit.y);
 			if (phi < 0.f) phi += 2.f*pi<float>();
-			/*if((z.min > -radius && phit.z < z.min) || (z.max < radius && phit.z > z.max) || phi > phimax)
+			if((z.min > -radius && phit.z < z.min) || (z.max < radius && phit.z > z.max) || phi > phimax)
 			{
 				if (thit == t.second) return false;
 				if (t.second > hr.t.max) return false;
@@ -92,8 +94,9 @@ namespace raytracer14
 				if (phit.x == 0.f && phit.y == 0.f) phit.x = 1e-5f * radius;
 				float phi = atan2f(phit.x, phit.y);
 				if (phi < 0.f) phi += 2.f*pi<float>();
-				if ((z.min > -radius && phit.z < z.min) || (z.max < radius && phit.z > z.max) || phi > phimax) return false;
-			}*/
+				if ((z.min > -radius && phit.z < z.min) ||
+					(z.max < radius && phit.z > z.max) || phi > phimax) return false;
+			}
 			
 			float u = phi / phimax;
 			float thetav = acosf(clamp(phit.z / radius, -1.f, 1.f));
@@ -138,7 +141,7 @@ namespace raytracer14
 			pair<float, float> t;
 			if (!quadradic(A, B, C, t))
 				return false;
-			if ((interval(t.first, t.second)).outside(tt)) return false;
+			if (t.first > tt.max || t.second < tt.min) return false;
 			float thit = t.first;
 			if (t.first < tt.min)
 			{
@@ -155,7 +158,12 @@ namespace raytracer14
 				if (thit == t.second) return false;
 				if (t.second > tt.max) return false;
 				thit = t.second;
-				if ((z.min > -radius && phit.z < z.min) || (z.max < radius && phit.z > z.max) || phi > phimax) return false;
+				phit = rt(thit);
+				if (phit.x == 0.f && phit.y == 0.f) phit.x = 1e-5f * radius;
+				float phi = atan2f(phit.x, phit.y);
+				if (phi < 0.f) phi += 2.f*pi<float>();
+				if ((z.min > -radius && phit.z < z.min) ||
+					(z.max < radius && phit.z > z.max) || phi > phimax) return false;
 			}
 			return true;
 		}
