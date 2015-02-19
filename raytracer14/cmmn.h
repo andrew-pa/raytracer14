@@ -40,6 +40,13 @@ namespace raytracer14
 			// --------]-[--------]-[--------
 			return min > o.max || max < o.min;
 		}
+
+		inline bool contains(float v) const
+		{
+			//			 M       X
+			// ----------[---P---]----------
+			return v > min && v < max;
+		}
 	};
 	struct ray
 	{

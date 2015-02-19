@@ -4,6 +4,7 @@
 #include "surface.h"
 using namespace raytracer14;
 
+#include <glm/gtc/matrix_transform.hpp>
 
 /*class diffuse_material : public material
 {
@@ -30,10 +31,11 @@ int main()
 {
 	texture2d tx{ ivec2(640*2, 480*2) };
 
-	camera cam{ vec3(0, 2, -5), vec3(0.f) };
+	camera cam{ vec3(0, 2, 5), vec3(0.f) };
 
-	sphere sp = sphere(mat4(1), 1.f, 1.f, -1.f, 360.f);
-
+	//sphere sp = sphere(mat4(1), 1.f, 1.f, -1.f, 360.f);
+	//cylinder cy = cylinder(rotate(mat4(1), radians(45.f), vec3(1.f, 0.f, 0.f)), 1.f, .0f, .5f, 300.f);
+	disk dk = disk(mat4(1), 1.f, 1.f);
 	auto start = chrono::system_clock::now();
 	for (int y = 0; y < tx.size.y; ++y) 
 	{
@@ -42,9 +44,9 @@ int main()
 			vec2 uv = ((vec2(x, y) / (vec2)tx.size) * vec2(2.f)) - vec2(1.f);
 			auto r = cam.make_ray(uv);
 			hit_record hr(10000);
-			if(sp.hit(r, hr))
+			if(dk.hit(r, hr))
 			{
-				tx.pixel(ivec2(x, y)) = glm::max(0.1f, dot(hr.nn, vec3(0.f, -.5f, -.5f))) * vec3(1.f, 0.5f, 0.f);
+				tx.pixel(ivec2(x, y)) = glm::max(0.3f, dot(hr.nn, vec3(0.f, -.5f, -.5f))) * vec3(1.f, 0.5f, 0.f);
 			}
 			else tx.pixel(ivec2(x, y)) = vec3(0.f);
 		}

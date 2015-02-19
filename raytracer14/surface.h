@@ -165,17 +165,188 @@ namespace raytracer14
 				if ((z.min > -radius && phit.z < z.min) ||
 					(z.max < radius && phit.z > z.max) || phi > phimax) return false;
 			}
+			tt.min = thit;
 			return true;
 		}
-	
 		aabb bounds() const override
 		{
 			return aabb(vec3(-radius), vec3(radius));
 		}
-
 		float area() const override
 		{
 			return phimax*radius*z.length();
+		}
+	};
+
+	class cylinder : public surface
+	{
+	public:
+		float radius, phimax;
+		interval z;
+		cylinder(const mat4& wmx, float r, float z0, float z1, float pm)
+			: surface(wmx), radius(r), phimax(radians(clamp(pm, 0.f, 360.f))), z(z0, z1) {}
+
+		aabb bounds() const override
+		{
+			return aabb(vec3(-radius, -radius, z.min), vec3(radius, radius, z.max));
+		}
+
+		bool hit(const ray& r, hit_record& hr) const override
+		{
+			float A = r.d.x*r.d.x + r.d.y*r.d.y;
+			float B = 2.f * (r.d.x*r.o.x + r.d.y*r.o.y);
+			float C = r.o.x*r.o.x + r.o.y*r.o.y - radius*radius;
+			ray rt = r*world_transform;
+			pair<float, float> t;
+			if (!quadradic(A, B, C, t))
+				return false;
+
+			if (t.first > hr.t.max || t.second < hr.t.min) return false;
+			float thit = t.first;
+			if (t.first < hr.t.min)
+			{
+				thit = t.second;
+				if (thit > hr.t.max) return false;
+			}
+
+			vec3 phit = rt(thit);
+			float phi = atan2f(phit.y, phit.x);
+			if (phi < 0.) phi += two_pi<float>();
+			if(phit.z < z.min || phit.z > z.max || phi > phimax) 
+			{
+				if (thit == t.second) return false;
+				thit = t.second;
+				if (t.second > hr.t.max) return false;
+				phit = rt(thit);
+				phi = atan2f(phit.y, phit.x);
+				if (phi < 0.) phi += two_pi<float>();
+				if (phit.z < z.min || phit.z > z.max || phi > phimax) return false;
+			}
+
+			float u = phi / phimax;
+			float v = (phit.z - z.min) / z.length();
+			vec3 dpdu(-phimax*phit.y, phimax*phit.x, 0);
+			vec3 dpdv(0, 0, z.length());
+
+			vec3 d2pduu = -phimax * phimax * vec3(phit.x, phit.y, 0);
+			vec3 d2pduv(0.f), d2pdvv(0.f);
+
+			float E = dot(dpdu, dpdu);
+			float F = dot(dpdu, dpdv);
+			float G = dot(dpdv, dpdv);
+			vec3 N = normalize(cross(dpdu, dpdv));
+			float e = dot(N, d2pduu);
+			float f = dot(N, d2pduv);
+			float g = dot(N, d2pdvv);
+			float invEGF2 = 1.f / (E*G - F*F);
+			vec3 dndu = vec3((f*F - e*G) * invEGF2 * dpdu +
+				(e*F - f*E) * invEGF2 * dpdv);
+			vec3 dndv = vec3((g*F - f*G) * invEGF2 * dpdu +
+				(f*F - g*E) * invEGF2 * dpdv);
+
+			hr = hit_record(interval(thit, hr.t.max), object_transform*vec4(phit, 1.f),
+				object_transform*vec4(dpdu, 1.f), object_transform*vec4(dpdv, 1.f),
+				object_transform*vec4(dndu, 0.f), object_transform*vec4(dndv, 0.f), vec2(u, v), this);
+			return true;
+		}
+
+		bool hitp(const ray& r, interval& tt) const override
+		{
+			float A = r.d.x*r.d.x + r.d.y*r.d.y;
+			float B = 2.f * (r.d.x*r.o.x + r.d.y*r.o.y);
+			float C = r.o.x*r.o.x + r.o.y*r.o.y - radius*radius;
+			ray rt = r*world_transform;
+			pair<float, float> t;
+			if (!quadradic(A, B, C, t))
+				return false;
+
+			if (t.first > tt.max || t.second < tt.min) return false;
+			float thit = t.first;
+			if (t.first < tt.min)
+			{
+				thit = t.second;
+				if (thit > tt.max) return false;
+			}
+
+			vec3 phit = rt(thit);
+			float phi = atan2f(phit.y, phit.x);
+			if (phi < 0.) phi += two_pi<float>();
+			if (z.contains(phit.z) || phi > phimax)
+			{
+				if (thit == t.second) return false;
+				thit = t.second;
+				if (t.second > tt.max) return false;
+				phit = rt(thit);
+				phi = atan2f(phit.y, phit.x);
+				if (phi < 0.) phi += two_pi<float>();
+				if (z.contains(phit.z) || phi > phimax) return false;
+			}
+			tt.min = thit;
+			return true;
+		}
+		
+		float area() const override
+		{
+			return z.length()*phimax*radius;
+		}
+	};
+
+	class disk : public surface
+	{
+	public:
+		float height, radius, inner_radius, phimax;
+		disk(const mat4& wmx, float h, float r, float ir = 0.f, float p = 360.f)
+			: surface(wmx), height(h), radius(r), inner_radius(ir), phimax(p) {}
+
+		bool hit(const ray& r, hit_record& hr) const override
+		{
+			ray rt = r*world_transform;
+			if (fabsf(rt.d.z) < 1e-7) return false;
+			float thit = (height - rt.o.z)/rt.d.z;
+			if (thit < hr.t.min || thit > hr.t.max) return false;
+			vec3 phit = rt(thit);
+			float dist2 = phit.x*phit.x + phit.y*phit.y;
+			if (dist2 > radius*radius || dist2 < inner_radius*inner_radius)
+				return false;
+			float phi = atan2f(phit.y, phit.x);
+			if (phi < 0) phi += two_pi<float>();
+			if (phi > phimax) return false;
+			float u = phi / phimax;
+			float v = 1.f - ((sqrtf(dist2) - inner_radius) / (radius - inner_radius));
+			vec3 dpdu(-phimax*phit.y, phimax*phit.x, 0.f);
+			vec3 dpdv(-phit.x / (1.f - v), -phit.y / (1 - v), 0.f);
+			dpdu *= phimax*one_over_two_pi<float>();
+			dpdv *= (radius - inner_radius) / radius;
+			hr = hit_record(interval(thit, hr.t.max), object_transform*vec4(phit, 1.f),
+				object_transform*vec4(dpdu, 1.f), object_transform*vec4(dpdv, 1.f),
+				vec4(0.f), vec4(0.f), vec2(u, v), this);
+			return true;
+		}
+
+		bool hitp(const ray& r, interval& tt) const override
+		{
+			ray rt = r*world_transform;
+			if (fabsf(rt.d.z) < 1e-7) return false;
+			float thit = (height - rt.o.z) / rt.d.z;
+			if (thit < tt.min || thit > tt.max) return false;
+			vec3 phit = rt(thit);
+			float dist2 = phit.x*phit.x + phit.y*phit.y;
+			if (dist2 > radius*radius || dist2 < inner_radius*inner_radius)
+				return false;
+			float phi = atan2f(phit.y, phit.x);
+			if (phi < 0) phi += two_pi<float>();
+			if (phi > phimax) return false;
+			return true;
+		}
+
+		aabb bounds() const override
+		{
+			return aabb(vec3(-radius, -radius, height),vec3(radius,radius,height));
+		}
+
+		float area() const override
+		{
+			return phimax*0.5f*(radius*radius - inner_radius*inner_radius);
 		}
 	};
 
