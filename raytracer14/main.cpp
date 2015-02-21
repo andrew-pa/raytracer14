@@ -2,6 +2,7 @@
 #include "texture.h"
 #include "camera.h"
 #include "surface.h"
+#include "primitive.h"
 using namespace raytracer14;
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -35,7 +36,10 @@ int main()
 
 	//sphere sp = sphere(mat4(1), 1.f, 1.f, -1.f, 360.f);
 	//cylinder cy = cylinder(rotate(mat4(1), radians(45.f), vec3(1.f, 0.f, 0.f)), 1.f, .0f, .5f, 300.f);
-	disk dk = disk(mat4(1), 1.f, 1.f);
+	//disk dk = disk(mat4(1), 1.f, 1.f);
+	
+	primitive* p = new geometric_primitive(make_shared<disk>(mat4(1), 1.f, 1.f));
+	
 	auto start = chrono::system_clock::now();
 	for (int y = 0; y < tx.size.y; ++y) 
 	{
@@ -43,8 +47,8 @@ int main()
 		{
 			vec2 uv = ((vec2(x, y) / (vec2)tx.size) * vec2(2.f)) - vec2(1.f);
 			auto r = cam.make_ray(uv);
-			hit_record hr(10000);
-			if(dk.hit(r, hr))
+			intersection hr{ hit_record(10000), nullptr, mat4(1), mat4(1) };
+			if(p->hit(r, hr))
 			{
 				tx.pixel(ivec2(x, y)) = glm::max(0.3f, dot(hr.nn, vec3(0.f, -.5f, -.5f))) * vec3(1.f, 0.5f, 0.f);
 			}

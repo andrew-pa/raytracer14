@@ -81,21 +81,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="bvh_tree.cpp" />
-    <ClCompile Include="integrator.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="renderer.cpp" />
     <ClCompile Include="texture.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="bvh_tree.h" />
-    <ClInclude Include="bxdf.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="cmmn.h" />
-    <ClInclude Include="integrator.h" />
-    <ClInclude Include="lights.h" />
-    <ClInclude Include="renderer.h" />
-    <ClInclude Include="scene.h" />
+    <ClInclude Include="primitive.h" />
     <ClInclude Include="surface.h" />
     <ClInclude Include="texture.h" />
   </ItemGroup>
