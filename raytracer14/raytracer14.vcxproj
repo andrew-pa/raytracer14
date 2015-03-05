@@ -81,10 +81,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bvh_accel.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="texture.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="aggregate.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="cmmn.h" />
     <ClInclude Include="primitive.h" />

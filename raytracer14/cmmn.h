@@ -82,6 +82,8 @@ namespace raytracer14
 	{
 		vec3 min, max;
 
+		aabb() {}
+
 		aabb(vec3 m, vec3 x)
 			: min(m), max(x) {}
 		
@@ -186,6 +188,23 @@ namespace raytracer14
 		inline vec3 center() const
 		{
 			return (min + max) * .5f;
+		}
+
+		inline int max_extent() const
+		{
+			vec3 diag = max - min;
+			if (diag.x > diag.y && diag.x > diag.z)
+				return 0;
+			else if (diag.y > diag.z)
+				return 1;
+			else
+				return 2;
+		}
+
+		inline float surface_area() const
+		{
+			vec3 d = max - min;
+			return 2.f*(d.x*d.y + d.x*d.z + d.y*d.z);
 		}
 	};
 
