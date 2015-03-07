@@ -109,25 +109,26 @@ namespace raytracer14
 
 		inline aabb transform(const mat4& m) const
 		{
-			vec3 min, max;
-			min = vec3(m[3][0], m[3][1], m[3][2]);
-			max = min;
+			//mat4 m = transpose(masdf);
+			vec3 nmin, nmax;
+			nmin = vec3(m[3][0], m[3][1], m[3][2]);
+			nmax = nmin;
 
 			for (int i = 0; i < 3; ++i)
 				for (int j = 0; j < 3; ++j)
 				{
 					if (m[i][j] > 0)
 					{
-						min[i] += m[i][j] * min[j];
-						max[i] += m[i][j] * max[j];
+						nmin[i] += m[i][j] * min[j];
+						nmax[i] += m[i][j] * max[j];
 					}
 					else
 					{
-						min[i] += m[i][j] * max[j];
-						max[i] += m[i][j] * min[j];
+						nmin[i] += m[i][j] * max[j];
+						nmax[i] += m[i][j] * min[j];
 					}
 				}
-			return aabb(min, max);
+			return aabb(nmin, nmax);
 		}
 		
 		inline bool contains(vec3 p) const

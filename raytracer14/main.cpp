@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "surface.h"
 #include "primitive.h"
+#include "aggregate.h"
 using namespace raytracer14;
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -30,16 +31,23 @@ public:
 
 int main() 
 {
-	texture2d tx{ ivec2(640*2, 480*2) };
+	texture2d tx{ ivec2(640, 480) };
 
-	camera cam{ vec3(0, 2, 5), vec3(0.f) };
+	camera cam{ vec3(0, 0, 10), vec3(0.f) };
 
 	//sphere sp = sphere(mat4(1), 1.f, 1.f, -1.f, 360.f);
 	//cylinder cy = cylinder(rotate(mat4(1), radians(45.f), vec3(1.f, 0.f, 0.f)), 1.f, .0f, .5f, 300.f);
 	//disk dk = disk(mat4(1), 1.f, 1.f);
 	
-	primitive* p = new geometric_primitive(make_shared<disk>(mat4(1), 1.f, 1.f));
+	vector<shared_ptr<primitive>> prims;
+	prims.push_back(make_shared<geometric_primitive>(make_shared<sphere>(translate(mat4(1), vec3(0.75f, 0.f, 0.f)), .5f, 1.f, -1.f, 360.f)));
+	prims.push_back(make_shared<geometric_primitive>(make_shared<sphere>(translate(mat4(1), vec3(-0.75f, 0.f, 0.f)), .5f, 1.f, -1.f, 360.f)));
+	//prims.push_back(make_shared<geometric_primitive>(make_shared<sphere>(translate(mat4(1), vec3(0.0f, 0.f, 0.f)), .5f, 1.f, -1.f, 360.f)));
+
+	//prims.push_back(make_shared<geometric_primitive>(make_shared<disk>(mat4(1), 1.f, 1.f)));
 	
+	aggregate* ag = new bvh_accel(prims, bvh_accel::split_type::middle);
+
 	auto start = chrono::system_clock::now();
 	for (int y = 0; y < tx.size.y; ++y) 
 	{
@@ -48,12 +56,13 @@ int main()
 			vec2 uv = ((vec2(x, y) / (vec2)tx.size) * vec2(2.f)) - vec2(1.f);
 			auto r = cam.make_ray(uv);
 			intersection hr{ hit_record(10000), nullptr, mat4(1), mat4(1) };
-			if(p->hit(r, hr))
+			if(ag->hit(r, hr))
 			{
-				tx.pixel(ivec2(x, y)) = glm::max(0.3f, dot(hr.nn, vec3(0.f, -.5f, -.5f))) * vec3(1.f, 0.5f, 0.f);
+				tx.pixel(ivec2(x, y)) = glm::max(0.3f, dot(hr.nn, vec3(0.f, -.5f, .5f))) * vec3(1.f, 0.5f, 0.f);
 			}
 			else tx.pixel(ivec2(x, y)) = vec3(0.f);
 		}
+		cout << "Scanline " << y << endl;
 	}
 	auto end = chrono::system_clock::now();
 

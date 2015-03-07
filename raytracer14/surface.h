@@ -42,7 +42,7 @@ namespace raytracer14
 		virtual bool hit(const ray& r, hit_record& hr) const = 0;
 		virtual bool hitp(const ray& r, interval& tt) const = 0;
 		virtual aabb bounds() const = 0;
-		aabb world_bounds() const { return bounds().transform(world_transform); }
+		aabb world_bounds() const { return bounds().transform(object_transform); }
 		virtual float area() const { return 0.f; /*shape with no shape has no area*/ }
 
 		inline void set_world_transform(const mat4& w)

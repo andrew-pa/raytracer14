@@ -2,18 +2,20 @@
 
 namespace raytracer14
 {
-	bvh_accel::node* bvh_accel::recursive_build(const vector<bvh_primitive_info>& pio, uint s, uint f, uint& tn,
-		const vector<shared_ptr<primitive>>& op)
+	bvh_accel::node* bvh_accel::recursive_build(vector<bvh_primitive_info>& pio, uint s, uint f, uint& tn,
+		vector<shared_ptr<primitive>>& op)
 	{
 		tn++;
-		node* n = nullptr;
 		aabb bnd;
 		for (int i = s; i < f; ++i)
 			bnd = aabb(bnd, pio[i].bounds);
 		uint np = f - s;
 		if(np == 1)
 		{
-			n = new node(s, np, bnd);
+			uint fpo = op.size();
+			for (uint i = s; i < f; ++i)
+				op.push_back(primitives[pio[i].index]);
+			return new node(fpo, np, bnd);
 		}
 		else
 		{
@@ -24,8 +26,12 @@ namespace raytracer14
 			uint mid = (s+f) / 2;
 			if(centroid_bounds.max[dim] == centroid_bounds.min[dim])
 			{
-				n = new node(s, np, bnd);
+				uint fpo = op.size();
+				for (uint i = s; i < f; ++i)
+					op.push_back(primitives[pio[i].index]);
+				return new node(fpo, np, bnd);
 			}
+#pragma region split bounds
 			else
 			{
 				if(_split_type == split_type::middle)
@@ -34,6 +40,11 @@ namespace raytracer14
 					auto ptmid = partition(pio.begin(), pio.end(), 
 						[&](const bvh_primitive_info& i){ return i.center[dim] < pmid; });
 					mid = std::distance(pio.begin(), ptmid);
+					if(mid == s || mid == f)
+					{
+						mid = (s + f) / 2.f;
+						nth_element(pio.begin(), pio.begin() + mid, pio.end(), [&](const bvh_primitive_info& pa, const bvh_primitive_info& pb){ return pa.center[dim] < pb.center[dim]; });
+					}
 				}
 				else if(_split_type == split_type::equal_counts)
 				{
@@ -41,6 +52,7 @@ namespace raytracer14
 				}
 				else if(_split_type == split_type::sah)
 				{
+#pragma region SAH
 					if(np <= 4)
 					{
 						nth_element(pio.begin(), pio.begin() + mid, pio.end(), [&](const bvh_primitive_info& pa, const bvh_primitive_info& pb){ return pa.center[dim] < pb.center[dim]; });
@@ -98,15 +110,21 @@ namespace raytracer14
 						}
 						else
 						{
-							return new node(s, np, bnd);
+							uint fpo = op.size();
+							for (uint i = s; i < f; ++i)
+								op.push_back(primitives[pio[i].index]);
+							return new node(fpo, np, bnd);
 						}
 					}
+#pragma endregion
 				}
-				n = new node(dim, recursive_build(pio, s, mid, tn, op), 
-								  recursive_build(pio, mid, f, tn, op));
 			}
+
+			return new node(dim, recursive_build(pio, s, mid, tn, op),
+				recursive_build(pio, mid, f, tn, op));
+#pragma endregion
 		}
-		return n;
+		return nullptr;
 	}
 
 	uint bvh_accel::flatten_tree(node* n, uint& off)
@@ -133,7 +151,8 @@ namespace raytracer14
 		: primitives(p), _split_type(tp)
 	{
 		vector<bvh_primitive_info> pio;
-		for (const auto& x : p) pio.push_back(bvh_primitive_info(x));
+		for (uint i = 0; i < p.size(); ++i)
+			pio.push_back(bvh_primitive_info(p[i]->bounds(), i));
 		vector<shared_ptr<primitive>> order_p;
 		order_p.reserve(p.size());
 		uint tot_nodes = 0;
@@ -147,7 +166,7 @@ namespace raytracer14
 	bool bvh_accel::hit(const ray& r, intersection& intr) const
 	{
 		if (!nodes) return false;
-		bool hit = false;
+		bool vhit = false;
 		vec3 org = r(intr.t.min);
 		vec3 invd = 1.f / r.d;
 		bool din[3] = { invd.x < 0, invd.y < 0, invd.z < 0 };
@@ -157,14 +176,14 @@ namespace raytracer14
 		while(true)
 		{
 			const linear_node* nod = &nodes[nodenum];
-			if(aabbhitp(nod->bounds, r, invd, din))
+			if (nod->bounds.hit(r))// aabbhitp(nod->bounds, r, invd))
 			{
 				if(nod->nprimitives > 0)
 				{
 					for (uint i = nod->primitives_offset; i < nod->nprimitives; ++i)
 					{
 						if (primitives[i]->hit(r, intr))
-							hit = true;
+							vhit = true;
 					}
 					if (tdo == 0) break;
 					nodenum = todo[--tdo];
@@ -172,6 +191,55 @@ namespace raytracer14
 				else
 				{
 					if(din[nod->axis]) 
+					{
+						todo[tdo++] = nodenum + 1;
+						nodenum = nod->second_child_offset;
+					}
+					else
+					{
+						todo[tdo++] = nod->second_child_offset;
+						nodenum = nodenum + 1;
+					}
+				}
+			}
+			else
+			{
+				if (tdo == 0) break;
+				nodenum = todo[--tdo];
+			}
+		}
+
+		return vhit;
+	}
+
+	bool bvh_accel::hitp(const ray& r, interval& tt) const
+	{
+		if (!nodes) return false;
+		bool vhit = false;
+		vec3 org = r(tt.min);
+		vec3 invd = 1.f / r.d;
+		bool din[3] = { invd.x < 0, invd.y < 0, invd.z < 0 };
+
+		uint tdo = 0, nodenum = 0;
+		uint todo[64];
+		while (true)
+		{
+			const linear_node* nod = &nodes[nodenum];
+			if (aabbhitp(nod->bounds, r, invd))
+			{
+				if (nod->nprimitives > 0)
+				{
+					for (uint i = nod->primitives_offset; i < nod->nprimitives; ++i)
+					{
+						if (primitives[i]->hitp(r, tt))
+							vhit = true;
+					}
+					if (tdo == 0) break;
+					nodenum = todo[--tdo];
+				}
+				else
+				{
+					if (din[nod->axis])
 					{
 						todo[tdo++] = nodenum + 1;
 						nodenum = nod->second_child_offset;
@@ -185,10 +253,7 @@ namespace raytracer14
 			}
 		}
 
-		return hit;
+		return vhit;
 	}
 	
-	bool bvh_accel::hitp(const ray& r, interval& tt) const
-	{
-	}
 }
